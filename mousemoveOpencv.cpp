@@ -1,81 +1,63 @@
-#include<io.h>
+#include "opencv2/highgui/highgui.hpp"
 #include <iostream>
-#include <fstream>
-#include <vector>
-#include <stdio.h>
-#include "cv.h"
-#include "highgui.h"
-#include "CannyLine.h"
 
 using namespace std;
 using namespace cv;
 
-void getFiles(string path, vector<string>& files)
+
+void CallBackFunc2(int event, int x, int y, int flags, void* userdata)
 {
-	//文件句柄  
-	long   hFile = 0;
-	//文件信息  
-	struct _finddata_t fileinfo;
-	string p;
-	if ((hFile = _findfirst(p.assign(path).append("\\*").c_str(), &fileinfo)) != -1)
+	if (flags == (EVENT_FLAG_CTRLKEY + EVENT_FLAG_LBUTTON))
 	{
-		do
-		{
-			//如果是目录,迭代之  
-			//如果不是,加入列表  
-			if ((fileinfo.attrib &  _A_SUBDIR))
-			{
-				//if (strcmp(fileinfo.name, ".") != 0 && strcmp(fileinfo.name, "..") != 0)
-					//getFiles(p.assign(path).append("\\").append(fileinfo.name), files);
-			}
-			else
-			{
-				files.push_back(p.assign(path).append("\\").append(fileinfo.name));
-			}
-		} while (_findnext(hFile, &fileinfo) == 0);
-		_findclose(hFile);
+		cout << "Left mouse button is clicked while pressing CTRL key - position (" << x << ", " << y << ")" << endl;
+	}
+	else if (flags == (EVENT_FLAG_RBUTTON + EVENT_FLAG_SHIFTKEY))
+	{
+		cout << "Right mouse button is clicked while pressing SHIFT key - position (" << x << ", " << y << ")" << endl;
+	}
+	else if (event == EVENT_MOUSEMOVE && flags == EVENT_FLAG_ALTKEY)
+	{
+		cout << "Mouse is moved over the window while pressing ALT key - position (" << x << ", " << y << ")" << endl;
 	}
 }
 
-void process2(string fileCur)
+void CallBackFunc(int evt, int x, int y, int flags, void* param)
 {
-	cv::Mat img = imread(fileCur, 0);
-
-	CannyLine detector;
-	std::vector<std::vector<float> > lines;
-	detector.cannyLine(img, lines);
-
-	// show
-	cv::Mat imgShow(img.rows, img.cols, CV_8UC3, cv::Scalar(255, 255, 255));
-	for (int m = 0; m < lines.size(); ++m)
+	Mat* rgb = (Mat*)param;
+	if (evt == CV_EVENT_LBUTTONDOWN)
 	{
-		cv::line(imgShow, cv::Point(lines[m][0], lines[m][1]), cv::Point(lines[m][2], lines[m][3]), cv::Scalar(0, 0, 0), 1, CV_AA);
+		printf("%d %d: %d, %d, %d\n",
+			x, y,
+			(int)(*rgb).at<Vec3b>(y, x)[0],
+			(int)(*rgb).at<Vec3b>(y, x)[1],
+			(int)(*rgb).at<Vec3b>(y, x)[2]);
 	}
-	imshow("", imgShow);
-	imshow("ori", img);
-	cv::waitKey(0);
 }
 
-
-int main3()
+int main()
 {
+	// Read image from file 
+	Mat img = imread("./img/1.jpg");
 
-	char * filePath = "F:\\document\\毕业小论文\\障碍物检测\\pic\\3";
-	vector<string> files;
-
-	////获取该路径下的所有文件  
-	getFiles(filePath, files);
-
-	char str[30];
-	int size = files.size();
-	for (int i = 0; i < size; i++)
+	//if fail to read the image
+	if (img.empty())
 	{
-		cout << files[i].c_str() << endl;
-
-		process2(files[i].c_str());
+		cout << "Error loading the image" << endl;
+		return -1;
 	}
 
-	return 1;
+	//Create a window
+	namedWindow("ImageDisplay", 1);
+
+	//set the callback function for any mouse event
+	setMouseCallback("ImageDisplay", CallBackFunc, &img);
+
+	//show the image
+	imshow("ImageDisplay", img);
+
+	// Wait until user press some key
+	waitKey(0);
+
+	return 0;
 
 }
-
